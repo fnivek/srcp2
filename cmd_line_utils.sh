@@ -1,11 +1,11 @@
-src_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+srcp2_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 if [[ "$(whoami)" == "user" ]]; then
   ###############################
   # In container commands       #
   ###############################
   function init() {
-    cd "${src_dir}"
+    cd "${srcp2_dir}"
     source "init_workspace.sh"
     catkin build
     source "../../devel/setup.bash"
@@ -52,11 +52,11 @@ else
   ###############################
   # Out container commands      #
   ###############################
-  function start_src() {
-    sudo -E "${src_dir}/docker/run_src.sh"
+  function start_srcp2() {
+    sudo -E "${srcp2_dir}/docker/run_srcp2.sh"
   }
 
-  function stop_src() {
-    sudo -E "${src_dir}/docker/stop_src.sh"
+  function stop_srcp2() {
+    sudo -E "${srcp2_dir}/docker/stop_srcp2.sh"
   }
 fi

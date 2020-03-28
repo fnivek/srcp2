@@ -16,12 +16,12 @@ fi
 
 CONTAINER_DIR=$3
 if [[ -z "${CONTAINER_DIR}" ]]; then
-    CONTAINER_DIR=/home/user/catkin_ws/src/src
+    CONTAINER_DIR=/home/user/catkin_ws/src/srcp2
 fi
 
 IMAGE_NAME=$4
 if [[ -z "${IMAGE_NAME}" ]]; then
-    IMAGE_NAME=src
+    IMAGE_NAME=srcp2
 fi
 
 echo "Container name     : ${CONTAINER_NAME}"
