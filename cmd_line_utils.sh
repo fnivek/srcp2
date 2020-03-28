@@ -59,4 +59,8 @@ else
   function stop_srcp2() {
     sudo -E "${srcp2_dir}/docker/stop_srcp2.sh"
   }
+
+  function srcp2_sim() {
+    sudo "${srcp2_dir}/submodules/srcp2-competitors/docker/scripts/launch/roslaunch_docker" $@
+  }
 fi
