@@ -3,6 +3,7 @@
 echo "This file must be sourced not run"
 # Source ros
 source /opt/ros/${ROS_DISTRO}/setup.bash
+source "${srcp2_dir}/submodules/srcp2-competitors/ros_workspace/install/setup.bash"
 
 # Set the number of jobs to use when building
 NUM_JOBS=$1
