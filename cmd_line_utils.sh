@@ -52,11 +52,11 @@ else
   ###############################
   # Out container commands      #
   ###############################
-  function start_srcp2() {
+  function srcp2_start() {
     sudo -E "${srcp2_dir}/docker/run_srcp2.sh"
   }
 
-  function stop_srcp2() {
+  function srcp2_stop() {
     sudo -E "${srcp2_dir}/docker/stop_srcp2.sh"
   }
 
