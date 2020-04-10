@@ -1,0 +1,45 @@
+#!/usr/bin/python
+import rospy
+from sensor_msgs.msg import Joy
+from geometry_msgs.msg import Twist
+
+
+class Teleop:
+    def __init__(self):
+        self._robots = []
+        self._current_robot = None
+        # Publishers
+        self._publishers = {}
+        # Start joy subscriber
+        rospy.Subscriber("joy", Joy, self.joy_cb)
+
+    def get_robots(self):
+        topics = rospy.get_published_topics()
+        topics = filter(lambda topic: topic[0].find('imu', -3) != -1, topics)
+        self._robots = [topic.split('/')[1] for topic, _ in topics]
+        print('Found these robots {}'.format(', '.join(self._robots)))
+        for robot in self._robots:
+            self._publishers[robot] = rospy.Publisher('/{}/skid_cmd_vel'.format(robot), Twist, queue_size=1)
+        if self._current_robot not in self._robots and len(self._robots) != 0:
+            self._current_robot = self._robots[0]
+
+    def joy_cb(self, msg):
+        twist = Twist()
+        twist.linear.x = 10 * msg.axes[1]
+        twist.angular.z = 10 * msg.axes[0]
+
+        try:
+            self._publishers[self._current_robot].publish(twist)
+        except KeyError:
+            pass
+
+
+def main():
+    rospy.init_node('teleop', anonymous=True)
+    teleop = Teleop()
+    teleop.get_robots()
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    main()
