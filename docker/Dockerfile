@@ -6,6 +6,7 @@ FROM ros:melodic
 RUN apt update && \
   apt install -y \
     python-catkin-tools \
+    ros-melodic-joy \
     && \
   rm -rf /var/lib/apt/lists/*
 
