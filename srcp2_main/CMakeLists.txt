@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   srcp2_main_msgs
+  tf2_ros
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -30,7 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES srcp2_main
-  CATKIN_DEPENDS roscpp rospy srcp2_main_msgs
+  CATKIN_DEPENDS roscpp rospy srcp2_main_msgs tf2_ros
 #  DEPENDS system_lib
 )
 
