@@ -7,6 +7,7 @@ RUN apt update && \
   apt install -y \
     python-catkin-tools \
     ros-melodic-joy \
+    ros-melodic-tf2-ros \
     && \
   rm -rf /var/lib/apt/lists/*
 
