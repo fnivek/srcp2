@@ -56,7 +56,7 @@ include_directories(
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Quals 1
-add_executable(${PROJECT_NAME}_quals_1 src/nodes/quals_1.cpp)
+add_executable(${PROJECT_NAME}_quals_1 src/nodes/quals_1.cpp src/odometry.cpp)
 set_target_properties(${PROJECT_NAME}_quals_1 PROPERTIES OUTPUT_NAME quals_1 PREFIX "")
 add_dependencies(${PROJECT_NAME}_quals_1 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_quals_1 ${catkin_LIBRARIES})
