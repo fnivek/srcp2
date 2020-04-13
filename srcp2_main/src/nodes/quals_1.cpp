@@ -11,6 +11,7 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(10);
     while (ros::ok())
     {
+        odom.update();
         loop_rate.sleep();
         ros::spinOnce();
     }

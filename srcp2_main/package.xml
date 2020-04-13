@@ -14,6 +14,7 @@
   <depend>rospy</depend>
   <depend>srcp2_main_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
