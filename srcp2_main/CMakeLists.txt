@@ -4,6 +4,7 @@ project(srcp2_main)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -14,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   geometry_msgs
 )
+
+find_package(Eigen3 REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -33,7 +36,7 @@ catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES srcp2_main
   CATKIN_DEPENDS roscpp rospy srcp2_main_msgs tf2_ros geometry_msgs
-#  DEPENDS system_lib
+  DEPENDS EIGEN3
 )
 
 ###########
@@ -45,6 +48,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
