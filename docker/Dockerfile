@@ -8,6 +8,7 @@ RUN apt update && \
     python-catkin-tools \
     ros-melodic-joy \
     ros-melodic-tf2-ros \
+    ros-melodic-tf2-eigen \
     libeigen3-dev \
     && \
   rm -rf /var/lib/apt/lists/*
