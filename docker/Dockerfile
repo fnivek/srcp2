@@ -10,6 +10,7 @@ RUN apt update && \
     ros-melodic-tf2-ros \
     ros-melodic-tf2-eigen \
     libeigen3-dev \
+    ros-melodic-gazebo-msgs \
     && \
   rm -rf /var/lib/apt/lists/*
 
