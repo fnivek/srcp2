@@ -6,14 +6,20 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_eigen/tf2_eigen.h>
+#include <laser_geometry/laser_geometry.h>
+#include <pcl_conversions/pcl_conversions.h>
 // Ros msgs
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
+#include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Transform.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Header.h>
+
+// PCL
+#include <pcl/registration/icp.h>
 
 // Eigen
 #include <Eigen/Dense>
@@ -62,15 +68,20 @@ class Odometry
     // Subscriber callbacks
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
     void jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg);
+    void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
 
     // Imu
     void imuUpdate(const sensor_msgs::Imu& msg);
+
+    // Laser
+    void laserUpdate(const sensor_msgs::LaserScan& msg);
 
   private:
     // Name of the robot
     std::string robot_name_;
     // Subscribers
     std::unique_ptr<ros::Subscriber> imu_sub_;
+    std::unique_ptr<ros::Subscriber> laser_sub_;
     std::unique_ptr<ros::Subscriber> joint_states_sub_;
     // TF
     std::unique_ptr<tf2_ros::Buffer> tf_buf_;
@@ -79,6 +90,8 @@ class Odometry
     // Incoming msg queues
     std::mutex imu_lock_;
     std::queue<sensor_msgs::Imu> imu_queue_;
+    std::mutex laser_lock_;
+    std::queue<sensor_msgs::LaserScan> laser_queue_;
     // Current state
     float last_time_;
     Eigen::Vector3f pos_;
@@ -88,6 +101,7 @@ class Odometry
     Eigen::Vector3f ang_vel_bias_;
     Eigen::Vector3f grav_;
     Eigen::Matrix<float, 18, 18> err_cov_;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr last_pc_;
 
     // Debug
     ros::Publisher debug_pub_;

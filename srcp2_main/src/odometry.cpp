@@ -70,6 +70,8 @@ bool Odometry::setup()
     *imu_sub_ = nh.subscribe("/" + robot_name_ + "/imu", 10, &Odometry::imuCallback, this);
     joint_states_sub_.reset(new ros::Subscriber);
     *joint_states_sub_ = nh.subscribe("/" + robot_name_ + "/joint_states", 10, &Odometry::jointStatesCallback, this);
+    laser_sub_.reset(new ros::Subscriber);
+    *laser_sub_ = nh.subscribe("/" + robot_name_ + "/laser/scan", 10, &Odometry::laserCallback, this);
 }
 
 void Odometry::update()
@@ -107,6 +109,25 @@ void Odometry::update()
         {
             std::lock_guard<std::mutex> lock(imu_lock_);
             imu_queue_.pop();
+        }
+    }
+
+    while (!laser_queue_.empty())
+    {
+        // Get next laser scan
+        sensor_msgs::LaserScan msg;
+        {
+            std::lock_guard<std::mutex> lock(laser_lock_);
+            msg = laser_queue_.front();
+        }
+
+        // Process
+        laserUpdate(msg);
+
+        // Remove last laser scan
+        {
+            std::lock_guard<std::mutex> lock(laser_lock_);
+            laser_queue_.pop();
         }
     }
 }
@@ -150,34 +171,34 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
     mes_accel = Eigen::Vector3f(SampleFilter_get(&debug_filt_x_), SampleFilter_get(&debug_filt_y_),
                                 SampleFilter_get(&debug_filt_z_));
 
-    std::cout << "----------------------\n"
-              << "mes_accel:\n"
-              << mes_accel << std::endl
-              << "mes_vel:\n"
-              << mes_vel << std::endl
-              << "mes_head:\n"
-              << mes_head.toRotationMatrix() << std::endl
-              << "mes_head.angularDistance(Eigen::Quaternionf(Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ()))):\n"
-              << mes_head.angularDistance(Eigen::Quaternionf(Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ())))
-              << std::endl
-              << "rot:\n"
-              << rot << std::endl
-              << "diff:\n"
-              << mes_head.angularDistance(head_) << std::endl
-              << "mes_accel.norm():\n"
-              << mes_accel.norm() << std::endl
-              << "rot * mes_accel:\n"
-              << rot * mes_accel << std::endl
-              << "(rot * mes_accel - grav_):\n"
-              << (rot * mes_accel - grav_) << std::endl
-              << "(rot * mes_accel - grav_).norm():\n"
-              << (rot * mes_accel - grav_).norm() << std::endl
-              << "SampleFilter_get(&debug_filt_x_):\n"
-              << SampleFilter_get(&debug_filt_x_) << std::endl
-              << "SampleFilter_get(&debug_filt_y_):\n"
-              << SampleFilter_get(&debug_filt_y_) << std::endl
-              << "SampleFilter_get(&debug_filt_z_):\n"
-              << SampleFilter_get(&debug_filt_z_) << std::endl;
+    // std::cout << "----------------------\n"
+    //           << "mes_accel:\n"
+    //           << mes_accel << std::endl
+    //           << "mes_vel:\n"
+    //           << mes_vel << std::endl
+    //           << "mes_head:\n"
+    //           << mes_head.toRotationMatrix() << std::endl
+    //           << "mes_head.angularDistance(Eigen::Quaternionf(Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ()))):\n"
+    //           << mes_head.angularDistance(Eigen::Quaternionf(Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ())))
+    //           << std::endl
+    //           << "rot:\n"
+    //           << rot << std::endl
+    //           << "diff:\n"
+    //           << mes_head.angularDistance(head_) << std::endl
+    //           << "mes_accel.norm():\n"
+    //           << mes_accel.norm() << std::endl
+    //           << "rot * mes_accel:\n"
+    //           << rot * mes_accel << std::endl
+    //           << "(rot * mes_accel - grav_):\n"
+    //           << (rot * mes_accel - grav_) << std::endl
+    //           << "(rot * mes_accel - grav_).norm():\n"
+    //           << (rot * mes_accel - grav_).norm() << std::endl
+    //           << "SampleFilter_get(&debug_filt_x_):\n"
+    //           << SampleFilter_get(&debug_filt_x_) << std::endl
+    //           << "SampleFilter_get(&debug_filt_y_):\n"
+    //           << SampleFilter_get(&debug_filt_y_) << std::endl
+    //           << "SampleFilter_get(&debug_filt_z_):\n"
+    //           << SampleFilter_get(&debug_filt_z_) << std::endl;
 
     geometry_msgs::PoseStamped debug_head;
     debug_head.header = msg.header;
@@ -192,7 +213,7 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
 
     // Nominal state update
     last_time_ = msg.header.stamp.toSec();
-    std::cout << "dt: " << dt << std::endl;
+    // std::cout << "dt: " << dt << std::endl;
     pos_ += vel_ * dt + 0.5 * (rot * mes_accel - grav_) * dt * dt;
     vel_ += (rot * mes_accel - grav_) * dt;
     mes_vel *= dt;
@@ -229,19 +250,19 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
     // Error mean always 0
     err_cov_ = Fx * err_cov_ * Fx.transpose() + Fi * Q * Fi.transpose();
 
-    std::cout << "----------------------\n"
-              << "pos_:\n"
-              << pos_ << std::endl
-              << "vel_:\n"
-              << vel_ << std::endl
-              << "head_:\n"
-              << head_.matrix() << std::endl
-              << "accel_bias_:\n"
-              << accel_bias_ << std::endl
-              << "ang_vel_bias_:\n"
-              << ang_vel_bias_ << std::endl
-              << "grav_:\n"
-              << grav_ << std::endl;
+    // std::cout << "----------------------\n"
+    //           << "pos_:\n"
+    //           << pos_ << std::endl
+    //           << "vel_:\n"
+    //           << vel_ << std::endl
+    //           << "head_:\n"
+    //           << head_.matrix() << std::endl
+    //           << "accel_bias_:\n"
+    //           << accel_bias_ << std::endl
+    //           << "ang_vel_bias_:\n"
+    //           << ang_vel_bias_ << std::endl
+    //           << "grav_:\n"
+    //           << grav_ << std::endl;
     // << "err_cov_:\n" << err_cov_ << std::endl;
 }
 
@@ -252,4 +273,38 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
  */
 void Odometry::jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
+}
+
+void Odometry::laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+    std::lock_guard<std::mutex> lock(laser_lock_);
+    laser_queue_.emplace(*msg);
+}
+
+void Odometry::laserUpdate(const sensor_msgs::LaserScan& msg)
+{
+    // Convert to pcl point cloud xyz
+    laser_geometry::LaserProjection projector;
+    sensor_msgs::PointCloud2 ros_pc;
+    projector.projectLaser(msg, ros_pc);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pc(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(ros_pc, *pcl_pc);
+
+    // If this is the first time just save the pc
+    if (last_pc_ == NULL)
+    {
+        last_pc_ = pcl_pc;
+        return;
+    }
+
+    // Do ICP
+    pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+    icp.setInputSource(pcl_pc);
+    icp.setInputTarget(last_pc_);
+    pcl::PointCloud<pcl::PointXYZ> tfed_pc;
+    icp.align(tfed_pc);
+    std::cout << icp.getFinalTransformation() << std::endl;
+
+    // Update
+    last_pc_ = pcl_pc;
 }
