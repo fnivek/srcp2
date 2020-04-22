@@ -9,6 +9,8 @@ RUN apt update && \
     ros-melodic-joy \
     ros-melodic-tf2-ros \
     ros-melodic-tf2-eigen \
+    ros-melodic-pcl-ros \
+    ros-melodic-laser-geometry \
     libeigen3-dev \
     ros-melodic-gazebo-msgs \
     && \
