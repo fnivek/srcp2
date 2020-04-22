@@ -143,9 +143,12 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
     // Eigen::Matrix3f mes_rot(mes_head.toRotationMatrix());
     Eigen::Matrix3f rot(mes_head.toRotationMatrix());
 
+    // Filter
     SampleFilter_put(&debug_filt_x_, mes_accel[0]);
     SampleFilter_put(&debug_filt_y_, mes_accel[1]);
     SampleFilter_put(&debug_filt_z_, mes_accel[2]);
+    mes_accel = Eigen::Vector3f(SampleFilter_get(&debug_filt_x_), SampleFilter_get(&debug_filt_y_),
+                                SampleFilter_get(&debug_filt_z_));
 
     std::cout << "----------------------\n"
               << "mes_accel:\n"
