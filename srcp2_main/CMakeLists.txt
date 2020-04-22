@@ -15,6 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_eigen
   geometry_msgs
+  pcl_conversions
+  pcl_ros
+  sensor_msgs
+  laser_geometry
 )
 
 find_package(Eigen3 REQUIRED)
@@ -36,7 +40,17 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES srcp2_main
-  CATKIN_DEPENDS roscpp rospy srcp2_main_msgs tf2_ros tf2_eigen geometry_msgs
+  CATKIN_DEPENDS
+    roscpp
+    rospy
+    srcp2_main_msgs
+    tf2_ros
+    tf2_eigen
+    geometry_msgs
+    pcl_conversions
+    pcl_ros
+    sensor_msgs
+    laser_geometry
   DEPENDS EIGEN3
 )
 
