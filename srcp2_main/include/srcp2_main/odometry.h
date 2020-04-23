@@ -76,6 +76,9 @@ class Odometry
     // Laser
     void laserUpdate(const sensor_msgs::LaserScan& msg);
 
+    // Tf
+    void publishTf(std::string frame_id, std::string child_frame_id, ros::Time stamp, const Eigen::Affine3d& tf);
+
   private:
     // Name of the robot
     std::string robot_name_;
@@ -102,6 +105,7 @@ class Odometry
     Eigen::Vector3f grav_;
     Eigen::Matrix<float, 18, 18> err_cov_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr last_pc_;
+    Eigen::Affine3d last_laser_tf_;
 
     // Debug
     ros::Publisher debug_pub_;

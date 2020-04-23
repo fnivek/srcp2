@@ -41,6 +41,7 @@ Odometry::Odometry(std::string robot_name)
   , ang_vel_bias_(0, 0, 0)
   , grav_(0, 0, 1.62)
   , last_time_(0)
+  , last_laser_tf_(Eigen::Affine3d::Identity())
 {
     err_cov_ = Eigen::Matrix<float, 18, 18>::Zero();
     // Debug filters
@@ -90,20 +91,11 @@ void Odometry::update()
         imuUpdate(msg);
 
         // Update tf
-        geometry_msgs::TransformStamped tf_msg;
         Eigen::Affine3d tf;
         tf.linear() = head_.cast<double>().toRotationMatrix();  // Maybe change to message heading
         tf.translation() = pos_.cast<double>();
         tf = tf.inverse();
-        geometry_msgs::Pose pose = tf2::toMsg(tf);
-        tf_msg.transform.translation.x = pose.position.x;
-        tf_msg.transform.translation.y = pose.position.y;
-        tf_msg.transform.translation.z = pose.position.z;
-        tf_msg.transform.rotation = pose.orientation;
-        tf_msg.header.stamp = msg.header.stamp;
-        tf_msg.header.frame_id = msg.header.frame_id;
-        tf_msg.child_frame_id = "/world";
-        tf_broadcaster_->sendTransform(tf_msg);
+        publishTf(msg.header.frame_id, "/world", msg.header.stamp, tf);
 
         // Remove last element
         {
@@ -130,6 +122,20 @@ void Odometry::update()
             laser_queue_.pop();
         }
     }
+}
+
+void Odometry::publishTf(std::string frame_id, std::string child_frame_id, ros::Time stamp, const Eigen::Affine3d& tf)
+{
+    geometry_msgs::Pose pose = tf2::toMsg(tf);
+    geometry_msgs::TransformStamped tf_msg;
+    tf_msg.transform.translation.x = pose.position.x;
+    tf_msg.transform.translation.y = pose.position.y;
+    tf_msg.transform.translation.z = pose.position.z;
+    tf_msg.transform.rotation = pose.orientation;
+    tf_msg.header.stamp = stamp;
+    tf_msg.header.frame_id = frame_id;
+    tf_msg.child_frame_id = child_frame_id;
+    tf_broadcaster_->sendTransform(tf_msg);
 }
 
 /**
@@ -303,7 +309,9 @@ void Odometry::laserUpdate(const sensor_msgs::LaserScan& msg)
     icp.setInputTarget(last_pc_);
     pcl::PointCloud<pcl::PointXYZ> tfed_pc;
     icp.align(tfed_pc);
-    std::cout << icp.getFinalTransformation() << std::endl;
+    // std::cout << icp.getFinalTransformation() << std::endl;
+    last_laser_tf_ = Eigen::Affine3d(icp.getFinalTransformation().cast<double>()) * last_laser_tf_;
+    publishTf(msg.header.frame_id, "/world_laser", msg.header.stamp, last_laser_tf_);
 
     // Update
     last_pc_ = pcl_pc;
