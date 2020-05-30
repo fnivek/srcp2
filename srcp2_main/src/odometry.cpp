@@ -146,7 +146,15 @@ void Odometry::publishTf(std::string frame_id, std::string child_frame_id, ros::
 void Odometry::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 {
     std::lock_guard<std::mutex> lock(imu_lock_);
-    imu_queue_.emplace(*msg);
+
+    // Temporary fix to the /// instead of _tf/ in imu messages frame_id
+    sensor_msgs::Imu fixed_msg = *msg;
+    size_t quick_fix = fixed_msg.header.frame_id.find("///");
+    std::cout << quick_fix << std::endl;
+    if (quick_fix != std::string::npos)
+        fixed_msg.header.frame_id.replace(quick_fix, 3, "_tf/");
+
+    imu_queue_.emplace(fixed_msg);
 }
 
 void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
