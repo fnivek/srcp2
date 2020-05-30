@@ -104,24 +104,24 @@ void Odometry::update()
         }
     }
 
-    while (!laser_queue_.empty())
-    {
-        // Get next laser scan
-        sensor_msgs::LaserScan msg;
-        {
-            std::lock_guard<std::mutex> lock(laser_lock_);
-            msg = laser_queue_.front();
-        }
+    // while (!laser_queue_.empty())
+    // {
+    //     // Get next laser scan
+    //     sensor_msgs::LaserScan msg;
+    //     {
+    //         std::lock_guard<std::mutex> lock(laser_lock_);
+    //         msg = laser_queue_.front();
+    //     }
 
-        // Process
-        laserUpdate(msg);
+    //     // Process
+    //     laserUpdate(msg);
 
-        // Remove last laser scan
-        {
-            std::lock_guard<std::mutex> lock(laser_lock_);
-            laser_queue_.pop();
-        }
-    }
+    //     // Remove last laser scan
+    //     {
+    //         std::lock_guard<std::mutex> lock(laser_lock_);
+    //         laser_queue_.pop();
+    //     }
+    // }
 }
 
 void Odometry::publishTf(std::string frame_id, std::string child_frame_id, ros::Time stamp, const Eigen::Affine3d& tf)
@@ -136,6 +136,84 @@ void Odometry::publishTf(std::string frame_id, std::string child_frame_id, ros::
     tf_msg.header.frame_id = frame_id;
     tf_msg.child_frame_id = child_frame_id;
     tf_broadcaster_->sendTransform(tf_msg);
+}
+
+bool Odometry::getSupportPlaneNormal(std::string frame_id, ros::Time time, Eigen::Vector4f& normal)
+{
+    // Get the pose of the four wheels in frame_id
+    geometry_msgs::TransformStamped fl_tf, fr_tf, bl_tf, br_tf;
+    try
+    {
+        fl_tf = tf_buf_->lookupTransform(frame_id, robot_name_ + +"_tf/fl_wheel", time);
+        fr_tf = tf_buf_->lookupTransform(frame_id, robot_name_ + +"_tf/fr_wheel", time);
+        bl_tf = tf_buf_->lookupTransform(frame_id, robot_name_ + +"_tf/bl_wheel", time);
+        br_tf = tf_buf_->lookupTransform(frame_id, robot_name_ + +"_tf/br_wheel", time);
+    }
+    catch (tf2::TransformException& ex)
+    {
+        return false;
+    }
+
+    // Find the centroid and shift all points
+    Eigen::Vector3f fl(fl_tf.transform.translation.x, fl_tf.transform.translation.y, fl_tf.transform.translation.z);
+    Eigen::Vector3f fr(fr_tf.transform.translation.x, fr_tf.transform.translation.y, fr_tf.transform.translation.z);
+    Eigen::Vector3f bl(bl_tf.transform.translation.x, bl_tf.transform.translation.y, bl_tf.transform.translation.z);
+    Eigen::Vector3f br(br_tf.transform.translation.x, br_tf.transform.translation.y, br_tf.transform.translation.z);
+    std::cout << "fl\n"
+              << fl << std::endl
+              << "fr\n"
+              << fr << std::endl
+              << "bl\n"
+              << bl << std::endl
+              << "br\n"
+              << br << std::endl;
+    Eigen::Vector3f centroid = (fl + fr + bl + br) / 4;
+    std::cout << "centroid\n" << centroid << std::endl;
+    fl -= centroid;
+    fr -= centroid;
+    bl -= centroid;
+    br -= centroid;
+
+    std::cout << "fl\n"
+              << fl << std::endl
+              << "fr\n"
+              << fr << std::endl
+              << "bl\n"
+              << bl << std::endl
+              << "br\n"
+              << br << std::endl;
+    // Calculate covariance matrix
+    Eigen::Matrix<float, 3, 4> A;
+    A.block<3, 1>(0, 0) = fl;
+    A.block<3, 1>(0, 1) = fr;
+    A.block<3, 1>(0, 2) = bl;
+    A.block<3, 1>(0, 3) = br;
+    Eigen::Matrix3f covariance = A * A.transpose();
+    std::cout << "A\n" << A << std::endl;
+    // Calculate smallest Eigenvector
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(covariance);
+    // Construct result
+    normal = Eigen::Vector4f::Zero();
+    normal.block<3, 1>(0, 0) = eigen_solver.eigenvectors().block<3, 1>(0, 0);
+    std::cout << "Eigenvalues:\n" << eigen_solver.eigenvalues() << std::endl;
+    std::cout << "Eigenvectors:\n" << eigen_solver.eigenvectors() << std::endl;
+
+    // // Find the least squares best fit to a plane
+    // //  n * p = 0, n = [A, B, C, D]
+    // //  A = [fl^t; fr^t; bl^t; br^t], x = n, b = [d; d; d; d]
+    // Eigen::Matrix<float, 4, 3> A;
+    // A.block<1, 3>(0, 0) = Eigen::Matrix<float, 1, 3>(fl_tf.transform.translation.x, fl_tf.transform.translation.y,
+    // 1); A.block<1, 3>(1, 0) = Eigen::Matrix<float, 1, 3>(fr_tf.transform.translation.x,
+    // fr_tf.transform.translation.y, 1); A.block<1, 3>(2, 0) = Eigen::Matrix<float, 1,
+    // 3>(bl_tf.transform.translation.x, bl_tf.transform.translation.y, 1); A.block<1, 3>(3, 0) = Eigen::Matrix<float,
+    // 1, 3>(br_tf.transform.translation.x, br_tf.transform.translation.y, 1); Eigen::Vector4f
+    // B(fl_tf.transform.translation.z, fr_tf.transform.translation.z, bl_tf.transform.translation.z,
+    //                   br_tf.transform.translation.z);
+    // std::cout << "A\n" << A << std::endl;
+    // std::cout << "B\n" << B << std::endl;
+    // normal.block<1, 3>(0, 0) = A.colPivHouseholderQr().solve(B);
+
+    return true;
 }
 
 /**
@@ -169,9 +247,19 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
     if (dt <= 0)
         return;
 
+    Eigen::Vector4f support_plane;
+    if (!getSupportPlaneNormal(msg.header.frame_id, msg.header.stamp, support_plane))
+    {
+        return;
+    }
+    std::cout << "support_plane:\n" << support_plane << std::endl;
+
     // Convert message to Eigen
     Eigen::Vector3f mes_accel(msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z);
     mes_accel -= accel_bias_;
+    mes_accel -=
+        support_plane.block<3, 1>(0, 0) * support_plane.block<3, 1>(0, 0).dot(mes_accel) / support_plane.norm();
+    mes_accel += support_plane.block<3, 1>(0, 0) * support_plane.block<3, 1>(0, 0).dot(grav_) / support_plane.norm();
     Eigen::Vector3f mes_vel(msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z);
     mes_vel -= ang_vel_bias_;
     Eigen::Quaternionf mes_head(msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z);
@@ -216,13 +304,20 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
 
     geometry_msgs::PoseStamped debug_head;
     debug_head.header = msg.header;
-    debug_head.pose.position.x = 0;
-    debug_head.pose.position.y = 0;
-    debug_head.pose.position.z = 0;
-    debug_head.pose.orientation.x = mes_head.x();
-    debug_head.pose.orientation.y = mes_head.y();
-    debug_head.pose.orientation.z = mes_head.z();
-    debug_head.pose.orientation.w = mes_head.w();
+    debug_head.pose.position.x = mes_accel[0];
+    debug_head.pose.position.y = mes_accel[1];
+    debug_head.pose.position.z = mes_accel[2];
+    debug_head.pose.orientation.x = 0;
+    debug_head.pose.orientation.y = 0;
+    debug_head.pose.orientation.z = 0;
+    debug_head.pose.orientation.w = 1;
+    // debug_head.pose.position.x = 0;
+    // debug_head.pose.position.y = 0;
+    // debug_head.pose.position.z = 0;
+    // debug_head.pose.orientation.x = mes_head.x();
+    // debug_head.pose.orientation.y = mes_head.y();
+    // debug_head.pose.orientation.z = mes_head.z();
+    // debug_head.pose.orientation.w = mes_head.w();
     debug_pub_.publish(debug_head);
 
     // Nominal state update
@@ -230,6 +325,7 @@ void Odometry::imuUpdate(const sensor_msgs::Imu& msg)
     // std::cout << "dt: " << dt << std::endl;
     pos_ += vel_ * dt + 0.5 * (rot * mes_accel - grav_) * dt * dt;
     vel_ += (rot * mes_accel - grav_) * dt;
+    vel_ -= support_plane.block<3, 1>(0, 0) * support_plane.block<3, 1>(0, 0).dot(vel_) / support_plane.norm();
     mes_vel *= dt;
     float phi = mes_vel.norm();
     Eigen::Vector3f u_sin_phi = std::sin(phi / 2) * mes_vel / phi;

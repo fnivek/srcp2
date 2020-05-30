@@ -70,6 +70,9 @@ class Odometry
     void jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg);
     void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
 
+    // Geometry
+    bool getSupportPlaneNormal(std::string frame_id, ros::Time time, Eigen::Vector4f& normal);
+
     // Imu
     void imuUpdate(const sensor_msgs::Imu& msg);
 
