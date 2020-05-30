@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   sensor_msgs
   laser_geometry
+  visualization_msgs
 )
 
 find_package(Eigen3 REQUIRED)
@@ -51,6 +52,7 @@ catkin_package(
     pcl_ros
     sensor_msgs
     laser_geometry
+    visualization_msgs
   DEPENDS EIGEN3
 )
 
