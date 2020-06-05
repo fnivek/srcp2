@@ -66,6 +66,8 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  # TODO(Kevin) make relative
+  /home/user/catkin_ws/src/srcp2/submodules/libigl/include
 )
 
 ## Declare a C++ library

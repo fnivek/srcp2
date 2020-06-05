@@ -1,3 +1,6 @@
 [submodule "submodules/srcp2-competitors"]
 	path = submodules/srcp2-competitors
 	url = git@gitlab.com:scheducation/srcp2-competitors.git
+[submodule "submodules/libigl"]
+	path = submodules/libigl
+	url = https://github.com/libigl/libigl.git
