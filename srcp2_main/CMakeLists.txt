@@ -86,6 +86,12 @@ set_target_properties(${PROJECT_NAME}_quals_1 PROPERTIES OUTPUT_NAME quals_1 PRE
 add_dependencies(${PROJECT_NAME}_quals_1 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_quals_1 ${catkin_LIBRARIES})
 
+# Point to mesh test script
+add_executable(${PROJECT_NAME}_point_to_mesh scripts/point_to_mesh.cpp)
+set_target_properties(${PROJECT_NAME}_point_to_mesh PROPERTIES OUTPUT_NAME point_to_mesh PREFIX "")
+add_dependencies(${PROJECT_NAME}_point_to_mesh ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(${PROJECT_NAME}_point_to_mesh ${catkin_LIBRARIES})
+
 #############
 ## Testing ##
 #############
