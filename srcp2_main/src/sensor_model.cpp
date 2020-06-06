@@ -32,7 +32,8 @@ double SensorModel::likelihood(const Particle::Pose& pose, const Eigen::MatrixXd
     Eigen::VectorXd sqr_dists;
     Eigen::VectorXi index;
     Eigen::MatrixXd clossest_pts;
-    lunar_terrain_tree_.squared_distance(lunar_terrain_v_, lunar_terrain_f_, world_scan.transpose(), sqr_dists, index,
+    lunar_terrain_tree_.squared_distance(lunar_terrain_v_, lunar_terrain_f_,
+                                         world_scan.block(0, 0, 3, world_scan.cols()).transpose(), sqr_dists, index,
                                          clossest_pts);
     ROS_INFO("sum_sqr_dists: %f", sqr_dists.sum());
 }
