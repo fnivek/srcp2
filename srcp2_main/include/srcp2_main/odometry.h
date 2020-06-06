@@ -1,5 +1,5 @@
-#ifndef SRP2_MAIN_ODOMETRY_H_
-#define SRP2_MAIN_ODOMETRY_H_
+#ifndef SRCP2_MAIN_ODOMETRY_H_
+#define SRCP2_MAIN_ODOMETRY_H_
 
 // Ros
 #include <ros/ros.h>
@@ -114,4 +114,4 @@ class Odometry
     SampleFilter debug_filt_z_;
 };
 
-#endif
+#endif  // SRCP2_MAIN_ODOMETRY_H_
