@@ -43,7 +43,8 @@ void Mcl::computePosterior(const sensor_msgs::LaserScan& msg)
 {
     // TODO(Kevin): Avoid this insane amount of conversions
     // TODO(Kevin): Transform these points to robot footprint
-    // Convert to pcl point cloud xyz
+    // TODO(Kevin): Handle the fact that if scans are infinit they do not add penalty, i.e. if Laser sees nothing
+    // sum_squared distances is 0 Convert to pcl point cloud xyz
     laser_geometry::LaserProjection projector;
     sensor_msgs::PointCloud2 ros_pc;
     projector.projectLaser(msg, ros_pc);
