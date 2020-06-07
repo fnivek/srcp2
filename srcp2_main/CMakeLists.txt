@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   srcp2_main_msgs
+  srcp2_msgs
   tf2_ros
   tf2_eigen
   geometry_msgs
@@ -45,6 +46,7 @@ catkin_package(
     roscpp
     rospy
     srcp2_main_msgs
+    srcp2_msgs
     tf2_ros
     tf2_eigen
     geometry_msgs
