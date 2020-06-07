@@ -2,36 +2,99 @@
 import rospy
 from sensor_msgs.msg import Joy
 from geometry_msgs.msg import Twist
+from std_msgs.msg import Float64
+from srcp2_msgs.srv import (ToggleLightSrv, ToggleLightSrvRequest, BrakeRoverSrv, BrakeRoverSrvRequest, ResetModelSrv,
+                            ResetModelSrvRequest)
+
+
+LIGHT_STATES = ['stop', 'low', 'HIGH']
+MAX_TILT = 3.14159265359 / 4
+MIN_TILT = -3.14159265359 / 8
+
+
+class Robot:
+    def __init__(self, name):
+        self.name = name
+        self.twist_pub = rospy.Publisher('/{}/skid_cmd_vel'.format(name), Twist, queue_size=1)
+        self.sensor_tilt_pub = rospy.Publisher('/{}/sensor_controller/command'.format(name), Float64, queue_size=1)
+        self.light_client = rospy.ServiceProxy('/{}/toggle_light'.format(name), ToggleLightSrv)
+        self.brake_client = rospy.ServiceProxy('/{}/brake_rover'.format(name), BrakeRoverSrv)
+        self.reset_client = rospy.ServiceProxy('/{}/reset_model'.format(name), ResetModelSrv)
+        self.sensor_tilt = 0
+        self.light = 0
+        self.brake = False
+
+    def update(self, msg, pressed_btns):
+        # Publish twist
+        twist = Twist()
+        twist.linear.x = 10 * msg.axes[1]
+        twist.angular.z = 10 * msg.axes[0]
+        self.twist_pub.publish(twist)
+
+        # Toggle light
+        if pressed_btns[5]:
+            self.light += 1
+            if self.light >= len(LIGHT_STATES):
+                self.light = 0
+            try:
+                self.light_client(ToggleLightSrvRequest(LIGHT_STATES[self.light]))
+            except rospy.ServiceException as ex:
+                rospy.warn('Couldn\'t change light state because ' + str(ex))
+
+        # Tilt sensor
+        self.sensor_tilt += msg.axes[4] * 0.1
+        if self.sensor_tilt >= MAX_TILT:
+            self.sensor_tilt = MAX_TILT
+        elif self.sensor_tilt <= MIN_TILT:
+            self.sensor_tilt = MIN_TILT
+        self.sensor_tilt_pub.publish(Float64(self.sensor_tilt))
+
+        # Brake
+        if pressed_btns[1]:
+            self.brake = not self.brake
+            self.brake_client(BrakeRoverSrvRequest(self.brake))
+
+        # Reset
+        if pressed_btns[7]:
+            self.reset_client(ResetModelSrvRequest(True))
 
 
 class Teleop:
     def __init__(self):
+        # Controller state
+        self._last_buttons = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # Robot state
         self._robots = []
         self._current_robot = None
-        # Publishers
-        self._publishers = {}
         # Start joy subscriber
         rospy.Subscriber("joy", Joy, self.joy_cb)
 
     def get_robots(self):
         topics = rospy.get_published_topics()
         topics = filter(lambda topic: topic[0].find('imu', -3) != -1, topics)
-        self._robots = [topic.split('/')[1] for topic, _ in topics]
-        print('Found these robots {}'.format(', '.join(self._robots)))
-        for robot in self._robots:
-            self._publishers[robot] = rospy.Publisher('/{}/skid_cmd_vel'.format(robot), Twist, queue_size=1)
+        self._robots = [Robot(topic.split('/')[1]) for topic, _ in topics]
+        print('Found these robots {}'.format(', '.join([robot.name for robot in self._robots])))
         if self._current_robot not in self._robots and len(self._robots) != 0:
             self._current_robot = self._robots[0]
 
-    def joy_cb(self, msg):
-        twist = Twist()
-        twist.linear.x = 10 * msg.axes[1]
-        twist.angular.z = 10 * msg.axes[0]
+    def pressed(self, buttons, last_buttons):
+        return [btn == 1 and last_btn == 0 for btn, last_btn in zip(buttons, last_buttons)]
 
-        try:
-            self._publishers[self._current_robot].publish(twist)
-        except KeyError:
-            pass
+    def released(self, buttons, last_buttons):
+        return [btn == 0 and last_btn == 1 for btn, last_btn in zip(buttons, last_buttons)]
+
+    def joy_cb(self, msg):
+        pressed_btns = self.pressed(msg.buttons, self._last_buttons)
+
+        self._current_robot.update(msg, pressed_btns)
+
+        # Switch robot
+        if pressed_btns[0]:
+            index = self._robots.index(self._current_robot) + 1
+            if index >= len(self._robots):
+                index = 0
+            self._current_robot = self._robots[index]
+        self._last_buttons = msg.buttons
 
 
 def main():
