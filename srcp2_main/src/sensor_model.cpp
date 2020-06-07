@@ -39,6 +39,16 @@ double SensorModel::likelihood(const Particle::Pose& pose, const sensor_msgs::La
     //                                      world_scan.block(0, 0, 3, world_scan.cols()).transpose(), sqr_dists, index,
     //                                      clossest_pts);
     // ROS_INFO("sum_sqr_dists: %f", sqr_dists.sum());
-    //
+    float angle = scan.angle_min;
+
+    for (float range : scan.ranges)
+    {
+        // Calculate direction of laser scan
+        Eigen::Vector3d dir =
+            pose.linear() * Eigen::AngleAxis<double>(angle, Eigen::Vector3d::UnitZ()) * Eigen::Vector3d::UnitX();
+        igl::Hit hit;
+        igl::ray_mesh_intersect(pose.translation(), dir, lunar_terrain_v_, lunar_terrain_f_, hit);
+        angle += scan.angle_increment;
+    }
     return 1;
 }

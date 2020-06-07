@@ -59,10 +59,12 @@ void Mcl::computePosterior(const sensor_msgs::LaserScan& msg)
                                                       tf_msg.transform.translation.z) *
                                  Eigen::Quaterniond(tf_msg.transform.rotation.w, tf_msg.transform.rotation.x,
                                                     tf_msg.transform.rotation.y, tf_msg.transform.rotation.z);
+
     Particle::Weight total_weight = 0;
     for (auto&& particle : particles_)
     {
-        particle.weight_ = sensor_model_.likelihood(particle.pose_ * laser_pose, msg);
+        Eigen::Affine3d world_laser_pose = particle.pose_ * laser_pose;
+        particle.weight_ = sensor_model_.likelihood(world_laser_pose, msg);
         total_weight += particle.weight_;
     }
 

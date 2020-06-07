@@ -14,6 +14,8 @@
 #include <igl/readSTL.h>
 #include <igl/point_mesh_squared_distance.h>
 #include <igl/AABB.h>
+#include <igl/ray_mesh_intersect.h>
+#include <igl/Hit.h>
 
 // SRCP2_main
 #include "srcp2_main/particle.h"
