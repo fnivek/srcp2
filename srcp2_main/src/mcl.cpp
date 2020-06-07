@@ -1,6 +1,6 @@
 #include "srcp2_main/mcl.h"
 
-Mcl::Mcl(std::string robot_name) : num_particles_(100), robot_name_(robot_name)
+Mcl::Mcl(std::string robot_name) : num_particles_(1), robot_name_(robot_name), tf_listener_(tf_buf_)
 {
 }
 
@@ -41,21 +41,34 @@ void Mcl::update(const sensor_msgs::LaserScan& msg)
 
 void Mcl::computePosterior(const sensor_msgs::LaserScan& msg)
 {
-    // TODO(Kevin): Avoid this insane amount of conversions
-    // TODO(Kevin): Transform these points to robot footprint
-    // TODO(Kevin): Handle the fact that if scans are infinit they do not add penalty, i.e. if Laser sees nothing
-    // sum_squared distances is 0 Convert to pcl point cloud xyz
-    laser_geometry::LaserProjection projector;
-    sensor_msgs::PointCloud2 ros_pc;
-    projector.projectLaser(msg, ros_pc);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_pc(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::fromROSMsg(ros_pc, *pcl_pc);
-    // Convert to Eigen
-    // TODO(Kevin): Make sure pts is a homgenous coordinate with [x,y,z,1]
-    Eigen::MatrixXd pts = ((Eigen::MatrixXf)pcl_pc->getMatrixXfMap()).cast<double>();
-
+    // Get the transform between the laser and the base footprint
+    geometry_msgs::TransformStamped tf_msg;
+    try
+    {
+        // TODO(Kevin): Don't sit around waitng for 0.1 seconds, if its not ready yet just use the most recent tf
+        tf_msg = tf_buf_.lookupTransform(robot_name_ + "_tf/base_footprint", robot_name_ + "_tf/hokuyo_link",
+                                         msg.header.stamp, ros::Duration(0.1));
+    }
+    catch (tf2::TransformException& ex)
+    {
+        ROS_WARN("%s", ex.what());
+        // TODO(Kevin): Handle faliure gracefully
+    }
+    // Transform to Eigen
+    Eigen::Affine3d laser_pose = Eigen::Translation3d(tf_msg.transform.translation.x, tf_msg.transform.translation.y,
+                                                      tf_msg.transform.translation.z) *
+                                 Eigen::Quaterniond(tf_msg.transform.rotation.w, tf_msg.transform.rotation.x,
+                                                    tf_msg.transform.rotation.y, tf_msg.transform.rotation.z);
+    Particle::Weight total_weight = 0;
     for (auto&& particle : particles_)
     {
-        particle.weight_ = sensor_model_.likelihood(particle.pose_, pts);
+        particle.weight_ = sensor_model_.likelihood(particle.pose_ * laser_pose, msg);
+        total_weight += particle.weight_;
+    }
+
+    // Normalize
+    for (auto&& particle : particles_)
+    {
+        particle.weight_ /= total_weight;
     }
 }

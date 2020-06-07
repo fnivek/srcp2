@@ -3,6 +3,8 @@
 
 // ROS
 #include <ros/ros.h>
+// Ros msgs
+#include <sensor_msgs/LaserScan.h>
 
 // Eigen
 #include <Eigen/Dense>
@@ -24,7 +26,7 @@ class SensorModel
     // Delayed initialization
     bool setup();
     // Get likelihood
-    double likelihood(const Particle::Pose& pose, const Eigen::MatrixXd& scan);
+    double likelihood(const Particle::Pose& pose, const sensor_msgs::LaserScan& scan);
 
   private:
   private:

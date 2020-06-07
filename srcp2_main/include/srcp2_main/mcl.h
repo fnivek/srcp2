@@ -50,6 +50,10 @@ class Mcl
     uint32_t num_particles_;
     std::string robot_name_;
     SensorModel sensor_model_;
+    // TF
+    tf2_ros::Buffer tf_buf_;
+    tf2_ros::TransformListener tf_listener_;
+    tf2_ros::TransformBroadcaster tf_broadcaster_;
 };
 
 #endif  // SRCP2_MAIN_MCL_H_

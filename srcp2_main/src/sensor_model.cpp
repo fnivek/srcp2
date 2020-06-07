@@ -26,14 +26,19 @@ bool SensorModel::setup()
  *
  * @return     The likelihood of this particle
  */
-double SensorModel::likelihood(const Particle::Pose& pose, const Eigen::MatrixXd& scan)
+double SensorModel::likelihood(const Particle::Pose& pose, const sensor_msgs::LaserScan& scan)
 {
-    Eigen::MatrixXd world_scan = pose.matrix() * scan;
-    Eigen::VectorXd sqr_dists;
-    Eigen::VectorXi index;
-    Eigen::MatrixXd clossest_pts;
-    lunar_terrain_tree_.squared_distance(lunar_terrain_v_, lunar_terrain_f_,
-                                         world_scan.block(0, 0, 3, world_scan.cols()).transpose(), sqr_dists, index,
-                                         clossest_pts);
-    ROS_INFO("sum_sqr_dists: %f", sqr_dists.sum());
+    // TODO(Kevin): Handle the fact that if scans are infinit they do not add penalty, i.e. if Laser sees nothing
+    //              sum_squared distances is 0 Convert to pcl point cloud xyz
+
+    // Eigen::MatrixXd world_scan = pose.matrix() * scan;
+    // Eigen::VectorXd sqr_dists;
+    // Eigen::VectorXi index;
+    // Eigen::MatrixXd clossest_pts;
+    // lunar_terrain_tree_.squared_distance(lunar_terrain_v_, lunar_terrain_f_,
+    //                                      world_scan.block(0, 0, 3, world_scan.cols()).transpose(), sqr_dists, index,
+    //                                      clossest_pts);
+    // ROS_INFO("sum_sqr_dists: %f", sqr_dists.sum());
+    //
+    return 1;
 }
