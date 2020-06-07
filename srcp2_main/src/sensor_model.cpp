@@ -13,7 +13,7 @@ bool SensorModel::setup()
     ROS_INFO("Finish load lunar_terrain");
     // Note this takes a few seconds
     ROS_INFO("Build aabb of lunar_terrain");
-    lunar_terrain_tree_.init(lunar_terrain_v_, lunar_terrain_f_);
+    // lunar_terrain_tree_.init(lunar_terrain_v_, lunar_terrain_f_);
     ROS_INFO("Built aabb of lunar_terrain");
 }
 
