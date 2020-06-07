@@ -15,6 +15,9 @@ bool SensorModel::setup()
     ROS_INFO("Build aabb of lunar_terrain");
     // lunar_terrain_tree_.init(lunar_terrain_v_, lunar_terrain_f_);
     ROS_INFO("Built aabb of lunar_terrain");
+
+    ros::NodeHandle nh;
+    debug_laser_pub_ = nh.advertise<sensor_msgs::LaserScan>("debug_sensor_model_scan", 1);
 }
 
 /**
@@ -39,6 +42,9 @@ double SensorModel::likelihood(const Particle::Pose& pose, const sensor_msgs::La
     //                                      world_scan.block(0, 0, 3, world_scan.cols()).transpose(), sqr_dists, index,
     //                                      clossest_pts);
     // ROS_INFO("sum_sqr_dists: %f", sqr_dists.sum());
+    sensor_msgs::LaserScan debug_scan = scan;
+    debug_scan.ranges.clear();
+
     float angle = scan.angle_min;
 
     for (float range : scan.ranges)
@@ -48,7 +54,11 @@ double SensorModel::likelihood(const Particle::Pose& pose, const sensor_msgs::La
             pose.linear() * Eigen::AngleAxis<double>(angle, Eigen::Vector3d::UnitZ()) * Eigen::Vector3d::UnitX();
         igl::Hit hit;
         igl::ray_mesh_intersect(pose.translation(), dir, lunar_terrain_v_, lunar_terrain_f_, hit);
+        std::cout << "(Expected range, measured range, diff): (" << hit.t << ", " << range << ", " << range - hit.t
+                  << ")" << std::endl;
         angle += scan.angle_increment;
+        debug_scan.ranges.emplace_back(hit.t);
     }
+    debug_laser_pub_.publish(debug_scan);
     return 1;
 }

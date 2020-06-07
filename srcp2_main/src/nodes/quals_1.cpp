@@ -1,5 +1,6 @@
 // Stl
 #include <string>
+#include <iostream>
 
 // Ros
 #include <ros/ros.h>
@@ -41,6 +42,7 @@ class Quals1
             pose = true_pose_srv.response.pose;
         }
 
+        std::cout << "pose:\n" << pose << std::endl;
         Eigen::Affine3d true_pose =
             Eigen::Translation3d(pose.position.x, pose.position.y, pose.position.z) *
             Eigen::Quaterniond(pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z);

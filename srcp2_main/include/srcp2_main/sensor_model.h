@@ -1,6 +1,9 @@
 #ifndef SRCP2_MAIN_SENSOR_MODEL_H_
 #define SRCP2_MAIN_SENSOR_MODEL_H_
 
+// STL
+#include <iostream>
+
 // ROS
 #include <ros/ros.h>
 // Ros msgs
@@ -37,6 +40,7 @@ class SensorModel
     Eigen::MatrixXd lunar_terrain_f_;
     Eigen::MatrixXd lunar_terrain_n_;
     igl::AABB<Eigen::MatrixXd, 3> lunar_terrain_tree_;
+    ros::Publisher debug_laser_pub_;
 };
 
 #endif  // SRCP2_MAIN_SENSOR_MODEL_H_

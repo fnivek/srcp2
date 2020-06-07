@@ -13,6 +13,7 @@ Mcl::Mcl(std::string robot_name) : num_particles_(1), robot_name_(robot_name), t
  */
 bool Mcl::setup(Eigen::Affine3d init_pose)
 {
+    std::cout << "init_pose\n" << init_pose.matrix() << std::endl;
     // Make all particles near the initial pose
     Particle::Weight uniform_weight = 1.0 / num_particles_;
     for (int i = 0; i < num_particles_; ++i)
@@ -26,6 +27,10 @@ bool Mcl::setup(Eigen::Affine3d init_pose)
 
     // Setup sensor model
     sensor_model_.setup();
+
+    // Debug
+    ros::NodeHandle nh;
+    debug_laser_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("debug_laser_pose", 1);
     return true;
 }
 
@@ -64,6 +69,27 @@ void Mcl::computePosterior(const sensor_msgs::LaserScan& msg)
     for (auto&& particle : particles_)
     {
         Eigen::Affine3d world_laser_pose = particle.pose_ * laser_pose;
+        // Debug publish laser pose
+        geometry_msgs::PoseStamped debug_msg;
+        debug_msg.header.frame_id = "gt_world";
+        debug_msg.header.stamp = debug_msg.header.stamp;
+        debug_msg.pose.position.x = world_laser_pose.translation()[0];
+        debug_msg.pose.position.y = world_laser_pose.translation()[1];
+        debug_msg.pose.position.z = world_laser_pose.translation()[2];
+        Eigen::Quaterniond q(world_laser_pose.rotation().matrix());
+        debug_msg.pose.orientation.x = q.x();
+        debug_msg.pose.orientation.y = q.y();
+        debug_msg.pose.orientation.z = q.z();
+        debug_msg.pose.orientation.w = q.w();
+        debug_laser_pose_pub_.publish(debug_msg);
+
+        std::cout << "laser_pose:\n"
+                  << laser_pose.matrix() << std::endl
+                  << "particle:\n"
+                  << particle.pose_.matrix() << std::endl
+                  << "world_laser_pose:\n"
+                  << world_laser_pose.matrix() << std::endl;
+
         particle.weight_ = sensor_model_.likelihood(world_laser_pose, msg);
         total_weight += particle.weight_;
     }

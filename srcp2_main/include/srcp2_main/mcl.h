@@ -5,6 +5,7 @@
 #include <vector>
 #include <random>
 #include <string>
+#include <iostream>
 
 // Eigen
 #include <Eigen/Dense>
@@ -54,6 +55,8 @@ class Mcl
     tf2_ros::Buffer tf_buf_;
     tf2_ros::TransformListener tf_listener_;
     tf2_ros::TransformBroadcaster tf_broadcaster_;
+    // Debug
+    ros::Publisher debug_laser_pose_pub_;
 };
 
 #endif  // SRCP2_MAIN_MCL_H_
