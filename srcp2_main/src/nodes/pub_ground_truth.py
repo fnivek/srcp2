@@ -23,7 +23,7 @@ class GtPub(object):
             pose = msg.pose[index]
             self._tf_bc.sendTransform((pose.position.x, pose.position.y, pose.position.z),
                                       (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
-                                      rospy.Time(),
+                                      rospy.Time.now(),
                                       child_frame,
                                       'gt_world')
 
